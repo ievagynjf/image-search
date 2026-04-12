@@ -10,127 +10,152 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--tx);font-family:'Noto Sans SC',sans-serif;font-weight:300;min-height:100vh}
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(232,255,71,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(232,255,71,.022) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0}
-.wrap{position:relative;z-index:1;max-width:700px;margin:0 auto;padding:2rem 1.25rem 4rem}
-.eng-row{display:flex;gap:7px;margin-bottom:1.25rem;flex-wrap:wrap}
-.eb{padding:5px 13px;border-radius:99px;border:1px solid var(--bd2);background:transparent;color:var(--mu);font-size:12px;font-family:'Noto Sans SC',sans-serif;cursor:pointer;transition:all .13s}
+.wrap{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:1.2rem 1rem 2rem}
+.layout{display:grid;grid-template-columns:420px 1fr;gap:14px;min-height:78vh}
+.panel{background:var(--sf);border:1px solid var(--bd);border-radius:12px}
+.left{padding:12px;display:flex;flex-direction:column;min-height:0}
+.right{padding:10px;display:flex;flex-direction:column;min-height:0}
+.eng-row{display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap}
+.eb{padding:5px 13px;border-radius:99px;border:1px solid var(--bd2);background:transparent;color:var(--mu);font-size:12px;cursor:pointer;transition:all .13s}
 .eb:hover{border-color:var(--ac);color:var(--ac)}
 .eb.on{background:var(--ac);color:#000;border-color:var(--ac);font-weight:500}
-#dz{border:1.5px dashed var(--bd2);border-radius:10px;padding:2rem 1rem;text-align:center;cursor:pointer;transition:border-color .13s,background .13s;background:var(--sf);position:relative;margin-bottom:1rem}
+#dz{border:1.5px dashed var(--bd2);border-radius:10px;padding:1.2rem 1rem;text-align:center;cursor:pointer;transition:border-color .13s,background .13s;background:var(--sf2);margin-bottom:10px}
 #dz:hover,#dz.over{border-color:var(--ac);background:rgba(232,255,71,.03)}
 #dz input{display:none}
 #dz p{font-size:13px;color:var(--mu)}
 #dz small{font-size:11px;color:var(--fa);margin-top:4px;display:block}
-.abar{display:flex;gap:8px;margin-bottom:1rem;align-items:center;flex-wrap:wrap}
-.btn{padding:8px 18px;border-radius:6px;border:1px solid var(--bd2);background:var(--sf2);color:var(--tx);font-size:13px;font-family:'Noto Sans SC',sans-serif;cursor:pointer;transition:all .12s;white-space:nowrap}
+.abar{display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap}
+.btn{padding:8px 14px;border-radius:6px;border:1px solid var(--bd2);background:var(--sf2);color:var(--tx);font-size:13px;cursor:pointer;transition:all .12s;white-space:nowrap}
 .btn:hover{background:#242424}
 .btn:disabled{opacity:.3;cursor:not-allowed}
 .btn.p{background:var(--ac);color:#000;border-color:var(--ac);font-weight:500}
-.btn.p:hover{background:#d6ec3a}
 .btn.d{color:var(--rd);border-color:rgba(248,113,113,.25);background:transparent}
-.btn.d:hover{background:rgba(248,113,113,.08)}
 #prog{font-size:12px;color:var(--mu);display:none}
-#stats{font-size:12px;color:var(--fa);margin-bottom:10px;display:none}
-#stats b{color:var(--mu);font-weight:400}
-#queue{display:flex;flex-direction:column;gap:7px}
-#empty{text-align:center;padding:2.5rem;font-size:13px;color:var(--fa)}
-.item{display:flex;align-items:center;gap:10px;background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:9px 11px}
-.thumb{width:48px;height:48px;object-fit:cover;border-radius:7px;border:1px solid var(--bd);flex-shrink:0;background:var(--sf2)}
+#stats{font-size:12px;color:var(--fa);margin-bottom:8px;display:none}
+#queue{display:flex;flex-direction:column;gap:7px;overflow:auto;min-height:120px;max-height:46vh;padding-right:2px}
+#empty{text-align:center;padding:1.5rem;font-size:13px;color:var(--fa)}
+.item{display:flex;align-items:center;gap:8px;background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:8px}
+.item.sel{outline:1px solid var(--ac)}
+.thumb{width:44px;height:44px;object-fit:cover;border-radius:7px;border:1px solid var(--bd);flex-shrink:0;background:#111}
 .imeta{flex:1;min-width:0}
-.iname{font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.iname{font-size:12px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px}
 .isize{font-size:11px;color:var(--fa)}
 .badge{font-size:10px;padding:2px 8px;border-radius:99px;font-weight:500;white-space:nowrap;flex-shrink:0}
 .badge.wait{background:rgba(255,255,255,.05);color:var(--fa)}
 .badge.ing{background:rgba(96,165,250,.15);color:var(--bl)}
 .badge.done{background:rgba(74,222,128,.15);color:var(--gn)}
 .badge.err{background:rgba(248,113,113,.15);color:var(--rd)}
-.iact{display:flex;gap:5px;flex-shrink:0;align-items:center}
-.mb{padding:4px 10px;border-radius:6px;border:1px solid var(--bd2);background:transparent;color:var(--mu);font-size:11px;font-family:'Noto Sans SC',sans-serif;cursor:pointer;transition:all .12s;white-space:nowrap}
-.mb:hover{color:var(--tx);background:var(--sf2)}
+.iact{display:flex;gap:4px;align-items:center}
+.mb{padding:4px 9px;border-radius:6px;border:1px solid var(--bd2);background:transparent;color:var(--mu);font-size:11px;cursor:pointer}
+.mb:hover{color:var(--tx);background:var(--sf)}
 .mb.go{background:var(--ac);color:#000;border-color:var(--ac);font-weight:500}
-.mb.go:hover{background:#d6ec3a}
-.xb{background:none;border:none;color:var(--fa);cursor:pointer;font-size:17px;line-height:1;padding:2px 3px;transition:color .12s}
-.xb:hover{color:var(--rd)}
-#logbox{margin-top:1rem;font-size:11px;color:var(--fa);font-family:monospace;background:var(--sf);border:1px solid var(--bd);border-radius:6px;padding:8px 11px;max-height:100px;overflow-y:auto;display:none;line-height:1.8}
-#logbox .ok{color:var(--gn)}
-#logbox .er{color:var(--rd)}
-::-webkit-scrollbar{width:3px}
-::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
-@media(max-width:480px){.item{flex-wrap:wrap}.iact{width:100%;justify-content:flex-end}}
+.xb{background:none;border:none;color:var(--fa);cursor:pointer;font-size:17px;line-height:1;padding:2px 3px}
+#errbox{display:none;margin-bottom:8px;padding:10px 12px;border:1px solid rgba(248,113,113,.35);background:rgba(248,113,113,.08);color:var(--rd);font-size:12px;border-radius:8px;line-height:1.6;max-height:130px;overflow:auto}
+.viewer-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 2px 10px}
+.vtitle{font-size:13px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vbtns{display:flex;gap:6px}
+#openNew{display:none}
+.viewer{position:relative;flex:1;min-height:420px;border:1px solid var(--bd);border-radius:10px;background:#111;overflow:hidden}
+#resultFrame{width:100%;height:100%;border:0;background:#fff;display:none}
+#viewerEmpty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--fa);font-size:13px;text-align:center;padding:1rem}
+@media(max-width:980px){.layout{grid-template-columns:1fr}.right{min-height:62vh}.viewer{min-height:60vh}#queue{max-height:34vh}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="eng-row" id="engines">
-    <button class="eb on" data-e="lens">Google Lens</button>
-    <button class="eb" data-e="tineye">TinEye</button>
-    <button class="eb" data-e="yandex">Yandex</button>
+  <div class="layout">
+    <section class="panel left">
+      <div class="eng-row" id="engines">
+        <button class="eb on" data-e="lens">Google Lens</button>
+        <button class="eb" data-e="tineye">TinEye</button>
+        <button class="eb" data-e="yandex">Yandex</button>
+      </div>
+
+      <div id="dz" role="button" tabindex="0" aria-label="选择图片">
+        <input type="file" id="fi" multiple accept="image/*">
+        <p id="dzText">拖入图片，或点击选择</p>
+        <small id="dzHint">JPG / PNG / WEBP / GIF · 可多选</small>
+      </div>
+
+      <div class="abar">
+        <button class="btn p" id="runAll" disabled>上传全部</button>
+        <button class="btn" id="viewFirst" disabled>查看第一条结果</button>
+        <button class="btn d" id="clrAll" disabled>清空</button>
+        <span id="prog"></span>
+      </div>
+
+      <div id="errbox"></div>
+      <div id="stats"></div>
+      <div id="queue"><div id="empty">暂无图片</div></div>
+    </section>
+
+    <section class="panel right">
+      <div class="viewer-toolbar">
+        <div class="vtitle" id="viewerTitle">结果面板：请先上传并点击某条“查看”</div>
+        <div class="vbtns">
+          <button class="btn" id="openNew">新标签打开</button>
+        </div>
+      </div>
+      <div class="viewer">
+        <iframe id="resultFrame" referrerpolicy="no-referrer"></iframe>
+        <div id="viewerEmpty">这里显示搜索结果页面。<br>若目标站点禁止嵌入，会自动显示“新标签打开”。</div>
+      </div>
+    </section>
   </div>
-  <div id="dz" role="button" tabindex="0" aria-label="选择图片">
-    <input type="file" id="fi" multiple accept="image/*" style="display:none">
-    <p id="dzText">拖入图片，或点击选择</p>
-    <small id="dzHint">JPG / PNG / WEBP / GIF &nbsp;&middot;&nbsp; 可多选</small>
-  </div>
-  <div class="abar">
-    <button class="btn p" id="runAll" disabled>搜索全部</button>
-    <button class="btn d" id="clrAll" disabled>清空</button>
-    <span id="prog"></span>
-  </div>
-  <div id="stats"></div>
-  <div id="queue"><div id="empty">暂无图片</div></div>
-  <div id="logbox"></div>
 </div>
+
 <script>
-var items=[], idc=0, eng='lens';
+var items=[], idc=0, eng='lens', currentViewId=null, currentViewUrl='';
 var ENG={
-  lens:  function(u){return 'https://lens.google.com/uploadbyurl?url='+encodeURIComponent(u)},
+  lens:function(u){return 'https://lens.google.com/uploadbyurl?url='+encodeURIComponent(u)},
   tineye:function(u){return 'https://tineye.com/search?url='+encodeURIComponent(u)},
   yandex:function(u){return 'https://yandex.com/images/search?url='+encodeURIComponent(u)+'&rpt=imageview'}
 };
+var EMBED_HINT={
+  lens:'Google Lens 通常禁止嵌入 iframe，请使用“新标签打开”。',
+  tineye:'TinEye 可能可嵌入；若空白请用“新标签打开”。',
+  yandex:'Yandex 可能可嵌入；若空白请用“新标签打开”。'
+};
+
+var dz=document.getElementById('dz'),fi=document.getElementById('fi');
+var dzText=document.getElementById('dzText'),dzHint=document.getElementById('dzHint');
+var isTouchDevice=('ontouchstart' in window)||(navigator.maxTouchPoints>0);
+if(isTouchDevice){dzText.textContent='点击选择图片';dzHint.textContent='JPG / PNG / WEBP / GIF · 支持多选';}
 
 document.getElementById('engines').addEventListener('click',function(e){
   var b=e.target.closest('.eb');if(!b)return;
   document.querySelectorAll('.eb').forEach(function(x){x.classList.remove('on')});
   b.classList.add('on');eng=b.dataset.e;
+  if(currentViewId){viewItem(currentViewId);} 
 });
-
-var dz=document.getElementById('dz'),fi=document.getElementById('fi');
-var dzText=document.getElementById('dzText');
-var dzHint=document.getElementById('dzHint');
-var isTouchDevice=('ontouchstart' in window) || (navigator.maxTouchPoints>0);
-
-if(isTouchDevice){
-  dzText.textContent='点击选择图片';
-  dzHint.innerHTML='JPG / PNG / WEBP / GIF &nbsp;&middot;&nbsp; 支持多选';
-}
 
 dz.addEventListener('click',function(){fi.click();});
-dz.addEventListener('keydown',function(e){
-  if(e.key==='Enter'||e.key===' '){
-    e.preventDefault();
-    fi.click();
-  }
+dz.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();fi.click();}});
+dz.addEventListener('dragover',function(e){if(isTouchDevice)return;e.preventDefault();dz.classList.add('over');});
+dz.addEventListener('dragleave',function(){if(!isTouchDevice)dz.classList.remove('over');});
+dz.addEventListener('drop',function(e){if(isTouchDevice)return;e.preventDefault();dz.classList.remove('over');addFiles(e.dataTransfer.files);});
+fi.addEventListener('change',function(e){addFiles(e.target.files);fi.value='';});
+
+document.getElementById('openNew').addEventListener('click',function(){if(currentViewUrl)window.open(currentViewUrl,'_blank');});
+document.getElementById('viewFirst').addEventListener('click',function(){
+  var first=items.find(function(i){return i.url;});
+  if(first)viewItem(first.id);
 });
 
-dz.addEventListener('dragover',function(e){
-  if(isTouchDevice)return;
-  e.preventDefault();
-  dz.classList.add('over');
-});
-dz.addEventListener('dragleave',function(){if(!isTouchDevice)dz.classList.remove('over')});
-dz.addEventListener('drop',function(e){
-  if(isTouchDevice)return;
-  e.preventDefault();
-  dz.classList.remove('over');
-  addFiles(e.dataTransfer.files);
-});
-fi.addEventListener('change',function(e){addFiles(e.target.files);fi.value=''});
-
-function fmt(b){return b<1024?b+' B':b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB'}
-
-function esc(s){
-  return String(s).replace(/[&<>"']/g,function(ch){
-    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
-  });
+function fmt(b){return b<1024?b+' B':b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB';}
+function esc(s){return String(s).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});}
+function showError(msg){
+  var eb=document.getElementById('errbox');
+  eb.style.display='block';
+  var d=document.createElement('div');
+  d.textContent='• '+msg;
+  eb.appendChild(d);
+  eb.scrollTop=eb.scrollHeight;
+}
+function clearErrors(){
+  var eb=document.getElementById('errbox');
+  eb.style.display='none';
+  eb.innerHTML='';
 }
 
 function addFiles(files){
@@ -143,128 +168,110 @@ function addFiles(files){
 }
 
 var BLABEL={wait:'待上传',ing:'上传中',done:'完成',err:'失败'};
-
 function renderItem(obj){
   var old=document.getElementById('it-'+obj.id);if(old)old.remove();
-  var div=document.createElement('div');
-  div.className='item';div.id='it-'+obj.id;
-  var btn=obj.url
-    ?'<button class="mb go" onclick="searchOne('+obj.id+')">搜索</button>'
-    :'<button class="mb" onclick="uploadOne('+obj.id+')">上传</button>';
+  var div=document.createElement('div');div.className='item'+(obj.id===currentViewId?' sel':'');div.id='it-'+obj.id;
+  var btnUpload=obj.url?'<button class="mb go" onclick="viewItem('+obj.id+')">查看</button>':'<button class="mb" onclick="uploadOne('+obj.id+')">上传</button>';
   div.innerHTML=
     '<img class="thumb" id="th-'+obj.id+'" alt="">'+
     '<div class="imeta"><div class="iname">'+esc(obj.file.name)+'</div><div class="isize">'+fmt(obj.file.size)+'</div></div>'+
     '<span class="badge '+obj.status+'">'+BLABEL[obj.status]+'</span>'+
-    '<div class="iact">'+btn+'<button class="xb" onclick="removeItem('+obj.id+')">&times;</button></div>';
-  var emp=document.getElementById('empty');
-  document.getElementById('queue').insertBefore(div,emp);
-  var r=new FileReader();
-  r.onload=function(e){var img=document.getElementById('th-'+obj.id);if(img)img.src=e.target.result};
-  r.readAsDataURL(obj.file);
+    '<div class="iact">'+btnUpload+'<button class="xb" onclick="removeItem('+obj.id+')">&times;</button></div>';
+  div.addEventListener('click',function(e){if(e.target.closest('button'))return;if(obj.url)viewItem(obj.id);});
+  var emp=document.getElementById('empty');document.getElementById('queue').insertBefore(div,emp);
+  var r=new FileReader();r.onload=function(e){var img=document.getElementById('th-'+obj.id);if(img)img.src=e.target.result;};r.readAsDataURL(obj.file);
 }
+
+function rerenderAll(){items.forEach(renderItem);}
 
 function updateUI(){
   var has=items.length>0;
   document.getElementById('runAll').disabled=!has;
   document.getElementById('clrAll').disabled=!has;
+  var uploaded=items.filter(function(i){return i.url;}).length;
+  document.getElementById('viewFirst').disabled=uploaded===0;
   var emp=document.getElementById('empty');if(emp)emp.style.display=has?'none':'block';
   var st=document.getElementById('stats');
-  if(has){
-    var done=items.filter(function(i){return i.url}).length;
-    st.style.display='block';
-    st.innerHTML='共 <b>'+items.length+'</b> 张 &nbsp;&middot;&nbsp; 已上传 <b>'+done+'</b>';
-  } else st.style.display='none';
-}
-
-function addLog(msg,cls){
-  var lb=document.getElementById('logbox');lb.style.display='block';
-  var d=document.createElement('div');if(cls)d.className=cls;
-  d.textContent=msg;lb.appendChild(d);lb.scrollTop=lb.scrollHeight;
+  if(has){st.style.display='block';st.innerHTML='共 <b>'+items.length+'</b> 张 · 已上传 <b>'+uploaded+'</b>';}else{st.style.display='none';}
 }
 
 window.removeItem=function(id){
   items=items.filter(function(i){return i.id!==id});
   var el=document.getElementById('it-'+id);if(el)el.remove();
+  if(currentViewId===id){clearViewer();}
   updateUI();
 };
 
-window.searchOne=function(id){
-  var obj=items.find(function(i){return i.id===id});
-  if(obj&&obj.url)window.open(ENG[eng](obj.url),'_blank');
-};
-
-// Upload through Cloudflare Pages Function proxy
 window.uploadOne=function(id){
   return new Promise(function(resolve){
     var obj=items.find(function(i){return i.id===id});
     if(!obj||obj.status==='ing'||obj.status==='done'){resolve();return}
     obj.status='ing';renderItem(obj);
-
-    var fd=new FormData();
-    fd.append('file',obj.file,obj.file.name);
-
+    var fd=new FormData();fd.append('file',obj.file,obj.file.name);
     fetch('/upload',{method:'POST',body:fd})
       .then(function(r){return r.json().then(function(j){return {ok:r.ok,body:j};});})
       .then(function(ret){
-        if(ret.ok && ret.body && ret.body.ok && ret.body.url){
-          obj.url=ret.body.url;
-          obj.status='done';
-          addLog('+ '+obj.file.name+' ['+(ret.body.provider||'proxy')+']','ok');
+        if(ret.ok&&ret.body&&ret.body.ok&&ret.body.url){
+          obj.url=ret.body.url;obj.status='done';
         }else{
           obj.status='err';
           var msg=(ret.body&&ret.body.error)||'上传失败';
-          if(ret.body && Array.isArray(ret.body.details) && ret.body.details.length){
-            msg += ' | ' + ret.body.details.join(' ; ');
-          }
-          addLog('x '+obj.file.name+': '+msg,'er');
+          if(ret.body&&Array.isArray(ret.body.details)&&ret.body.details.length){msg+=' | '+ret.body.details.join(' ; ');} 
+          showError(obj.file.name+': '+msg);
         }
         renderItem(obj);updateUI();resolve();
       })
-      .catch(function(){
-        obj.status='err';
-        addLog('x '+obj.file.name+': Cloudflare Functions 未生效（请确认已用 Pages+Functions 部署）','er');
-        renderItem(obj);updateUI();resolve();
-      });
+      .catch(function(){obj.status='err';showError(obj.file.name+': Cloudflare Functions 未生效');renderItem(obj);updateUI();resolve();});
   });
+};
+
+function clearViewer(){
+  currentViewId=null;currentViewUrl='';
+  document.getElementById('viewerTitle').textContent='结果面板：请先上传并点击某条“查看”';
+  document.getElementById('openNew').style.display='none';
+  var fr=document.getElementById('resultFrame');fr.style.display='none';fr.src='about:blank';
+  document.getElementById('viewerEmpty').style.display='flex';
+  rerenderAll();
+}
+
+window.viewItem=function(id){
+  var obj=items.find(function(i){return i.id===id});if(!obj||!obj.url)return;
+  currentViewId=id;
+  currentViewUrl=ENG[eng](obj.url);
+  document.getElementById('viewerTitle').textContent='查看：'+obj.file.name+' · '+(eng==='lens'?'Google Lens':eng==='tineye'?'TinEye':'Yandex');
+  document.getElementById('openNew').style.display='inline-block';
+  var fr=document.getElementById('resultFrame');
+  fr.style.display='block';
+  fr.src=currentViewUrl;
+  document.getElementById('viewerEmpty').style.display='none';
+  // lens often blocks iframe; user can tap 新标签打开 if needed
+  rerenderAll();
 };
 
 document.getElementById('runAll').addEventListener('click',function(){
   var prog=document.getElementById('prog');
   var pending=items.filter(function(i){return i.status==='wait'||i.status==='err'});
+  clearErrors();
   prog.style.display='inline';
-
   (function uploadNext(i){
     if(i>=pending.length){
       prog.textContent='';prog.style.display='none';
-      var ready=items.filter(function(it){return it.url});
-      if(!ready.length){
-        addLog('没有成功上传的图片，无法搜索','er');
-        return;
-      }
-
-      var blocked=0;
-      ready.forEach(function(obj){
-        var w=window.open(ENG[eng](obj.url),'_blank');
-        if(!w)blocked++;
-      });
-
-      // 只在完全失败时提示；有成功打开就不提示
-      if(blocked===ready.length){
-        addLog('搜索窗口被浏览器拦截，请允许弹窗后重试','er');
-      }
+      var first=items.find(function(it){return it.url;});
+      if(!first){showError('没有成功上传的图片，无法搜索');return;}
+      viewItem(first.id);
       return;
     }
     prog.textContent='上传 '+(i+1)+' / '+pending.length;
-    window.uploadOne(pending[i].id).then(function(){uploadNext(i+1)});
+    window.uploadOne(pending[i].id).then(function(){uploadNext(i+1);});
   })(0);
 });
 
 document.getElementById('clrAll').addEventListener('click',function(){
   if(!confirm('清空全部 '+items.length+' 张？'))return;
-  items=[];idc=0;
+  items=[];idc=0;currentViewId=null;currentViewUrl='';
   document.getElementById('queue').innerHTML='<div id="empty">暂无图片</div>';
-  document.getElementById('logbox').style.display='none';
-  document.getElementById('logbox').innerHTML='';
+  clearErrors();
+  clearViewer();
   updateUI();
 });
 </script>
