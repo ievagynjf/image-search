@@ -1,3 +1,10 @@
 name = "multi-image-search"
 compatibility_date = "2026-04-12"
 pages_build_output_dir = "."
+
+[vars]
+R2_PUBLIC_BASE_URL = "https://pub-c99dc43a47204fe6a934ae7ad3306cf8.r2.dev"
+
+[[r2_buckets]]
+binding = "IMG_BUCKET"
+bucket_name = "你的bucket名字"
