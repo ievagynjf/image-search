@@ -55,9 +55,8 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .vtitle{font-size:13px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .vbtns{display:flex;gap:6px}
 #openNew{display:none}
-.viewer{position:relative;flex:1;min-height:420px;border:1px solid var(--bd);border-radius:10px;background:#111;overflow:hidden}
-#resultFrame{width:100%;height:100%;border:0;background:#fff;display:none}
-#viewerEmpty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--fa);font-size:13px;text-align:center;padding:1rem}
+.viewer{position:relative;flex:1;min-height:420px;border:1px solid var(--bd);border-radius:10px;background:#111;overflow:hidden;display:flex;align-items:center;justify-content:center}
+#viewerEmpty{color:var(--fa);font-size:13px;text-align:center;padding:1.2rem;line-height:1.8;max-width:560px}
 @media(max-width:980px){.layout{grid-template-columns:1fr}.right{min-height:62vh}.viewer{min-height:60vh}#queue{max-height:34vh}}
 </style>
 </head>
@@ -97,8 +96,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
         </div>
       </div>
       <div class="viewer">
-        <iframe id="resultFrame" referrerpolicy="no-referrer"></iframe>
-        <div id="viewerEmpty">这里显示搜索结果页面。<br>若目标站点禁止嵌入，会自动显示“新标签打开”。</div>
+        <div id="viewerEmpty">结果将在单个复用标签页中打开（不会越开越多）。<br>点击队列里的“查看”或“上传全部”后自动打开/复用。</div>
       </div>
     </section>
   </div>
@@ -106,16 +104,13 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 
 <script>
 var items=[], idc=0, eng='lens', currentViewId=null, currentViewUrl='';
+var SEARCH_WINDOW_NAME='multi-image-search-window';
 var ENG={
   lens:function(u){return 'https://lens.google.com/uploadbyurl?url='+encodeURIComponent(u)},
   tineye:function(u){return 'https://tineye.com/search?url='+encodeURIComponent(u)},
   yandex:function(u){return 'https://yandex.com/images/search?url='+encodeURIComponent(u)+'&rpt=imageview'}
 };
-var EMBED_HINT={
-  lens:'Google Lens 通常禁止嵌入 iframe，请使用“新标签打开”。',
-  tineye:'TinEye 可能可嵌入；若空白请用“新标签打开”。',
-  yandex:'Yandex 可能可嵌入；若空白请用“新标签打开”。'
-};
+var ENG_NAME={lens:'Google Lens',tineye:'TinEye',yandex:'Yandex'};
 
 var dz=document.getElementById('dz'),fi=document.getElementById('fi');
 var dzText=document.getElementById('dzText'),dzHint=document.getElementById('dzHint');
@@ -136,7 +131,11 @@ dz.addEventListener('dragleave',function(){if(!isTouchDevice)dz.classList.remove
 dz.addEventListener('drop',function(e){if(isTouchDevice)return;e.preventDefault();dz.classList.remove('over');addFiles(e.dataTransfer.files);});
 fi.addEventListener('change',function(e){addFiles(e.target.files);fi.value='';});
 
-document.getElementById('openNew').addEventListener('click',function(){if(currentViewUrl)window.open(currentViewUrl,'_blank');});
+document.getElementById('openNew').addEventListener('click',function(){
+  if(!currentViewUrl)return;
+  var w=window.open(currentViewUrl,SEARCH_WINDOW_NAME);
+  if(!w)showError('浏览器拦截了结果窗口，请允许弹窗后重试');
+});
 document.getElementById('viewFirst').addEventListener('click',function(){
   var first=items.find(function(i){return i.url;});
   if(first)viewItem(first.id);
@@ -229,8 +228,7 @@ function clearViewer(){
   currentViewId=null;currentViewUrl='';
   document.getElementById('viewerTitle').textContent='结果面板：请先上传并点击某条“查看”';
   document.getElementById('openNew').style.display='none';
-  var fr=document.getElementById('resultFrame');fr.style.display='none';fr.src='about:blank';
-  document.getElementById('viewerEmpty').style.display='flex';
+  document.getElementById('viewerEmpty').style.display='block';
   rerenderAll();
 }
 
@@ -238,13 +236,15 @@ window.viewItem=function(id){
   var obj=items.find(function(i){return i.id===id});if(!obj||!obj.url)return;
   currentViewId=id;
   currentViewUrl=ENG[eng](obj.url);
-  document.getElementById('viewerTitle').textContent='查看：'+obj.file.name+' · '+(eng==='lens'?'Google Lens':eng==='tineye'?'TinEye':'Yandex');
+  document.getElementById('viewerTitle').textContent='查看：'+obj.file.name+' · '+(ENG_NAME[eng]||eng);
   document.getElementById('openNew').style.display='inline-block';
-  var fr=document.getElementById('resultFrame');
-  fr.style.display='block';
-  fr.src=currentViewUrl;
-  document.getElementById('viewerEmpty').style.display='none';
-  // lens often blocks iframe; user can tap 新标签打开 if needed
+  document.getElementById('viewerEmpty').style.display='block';
+
+  var w=window.open(currentViewUrl,SEARCH_WINDOW_NAME);
+  if(!w){
+    showError('浏览器拦截了结果窗口，请允许弹窗后重试');
+  }
+
   rerenderAll();
 };
 
