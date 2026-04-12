@@ -11,6 +11,18 @@ export async function onRequestPost(context) {
     const name = file.name || 'image.bin';
     const type = file.type || 'application/octet-stream';
 
+    const tryTelegraph = async () => {
+      const fd = new FormData();
+      fd.append('file', file, name);
+      const res = await fetch('https://telegra.ph/upload', { method: 'POST', body: fd });
+      if (!res.ok) throw new Error(`telegra.ph HTTP ${res.status}`);
+      const data = await res.json();
+      if (!Array.isArray(data) || !data[0] || !data[0].src) {
+        throw new Error(`telegra.ph invalid response: ${JSON.stringify(data)}`);
+      }
+      return { url: 'https://telegra.ph' + data[0].src, provider: 'telegra.ph' };
+    };
+
     const try0x0 = async () => {
       const fd = new FormData();
       fd.append('file', file, name);
@@ -33,21 +45,34 @@ export async function onRequestPost(context) {
       return { url: text, provider: 'catbox.moe' };
     };
 
+    const errors = [];
+
+    try {
+      const out = await tryTelegraph();
+      return json({ ok: true, url: out.url, provider: out.provider, type });
+    } catch (e) {
+      errors.push(String(e?.message || e));
+    }
+
     try {
       const out = await try0x0();
       return json({ ok: true, url: out.url, provider: out.provider, type });
-    } catch (e1) {
-      try {
-        const out = await tryCatbox();
-        return json({ ok: true, url: out.url, provider: out.provider, type });
-      } catch (e2) {
-        return json({
-          ok: false,
-          error: 'All upstream upload providers failed',
-          details: [String(e1?.message || e1), String(e2?.message || e2)]
-        }, 502);
-      }
+    } catch (e) {
+      errors.push(String(e?.message || e));
     }
+
+    try {
+      const out = await tryCatbox();
+      return json({ ok: true, url: out.url, provider: out.provider, type });
+    } catch (e) {
+      errors.push(String(e?.message || e));
+    }
+
+    return json({
+      ok: false,
+      error: 'All upstream upload providers failed',
+      details: errors
+    }, 502);
   } catch (err) {
     return json({ ok: false, error: String(err?.message || err) }, 500);
   }

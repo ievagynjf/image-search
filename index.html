@@ -187,6 +187,9 @@ window.uploadOne=function(id){
         }else{
           obj.status='err';
           var msg=(ret.body&&ret.body.error)||'上传失败';
+          if(ret.body && Array.isArray(ret.body.details) && ret.body.details.length){
+            msg += ' | ' + ret.body.details.join(' ; ');
+          }
           addLog('x '+obj.file.name+': '+msg,'er');
         }
         renderItem(obj);updateUI();resolve();
