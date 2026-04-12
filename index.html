@@ -6,35 +6,32 @@
 <title>搜图</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0d0d0d;--sf:#161616;--sf2:#1e1e1e;--bd:rgba(255,255,255,.07);--bd2:rgba(255,255,255,.13);--tx:#f0ede8;--mu:#888;--fa:#444;--ac:#e8ff47;--gn:#4ade80;--rd:#f87171;--bl:#60a5fa}
+:root{--bg:#15171b;--sf:#1b1e24;--sf2:#242833;--bd:rgba(255,255,255,.08);--bd2:rgba(255,255,255,.14);--tx:#f0ede8;--mu:#97a0af;--fa:#697180;--ac:#d8ef4a;--gn:#4ade80;--rd:#f87171;--bl:#60a5fa}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--tx);font-family:'Noto Sans SC',sans-serif;font-weight:300;min-height:100vh}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(232,255,71,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(232,255,71,.022) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0}
-.wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:1.2rem 1rem 2rem}
-.layout{display:block}
-.panel{background:var(--sf);border:1px solid var(--bd);border-radius:12px}
-.left{padding:12px;display:flex;flex-direction:column;min-height:0}
+.wrap{max-width:760px;margin:0 auto;padding:1.2rem 1rem 2rem}
+.panel{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:12px}
 .eng-row{display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap}
 .eb{padding:5px 13px;border-radius:99px;border:1px solid var(--bd2);background:transparent;color:var(--mu);font-size:12px;cursor:pointer;transition:all .13s}
 .eb:hover{border-color:var(--ac);color:var(--ac)}
 .eb.on{background:var(--ac);color:#000;border-color:var(--ac);font-weight:500}
 #dz{border:1.5px dashed var(--bd2);border-radius:10px;padding:1.2rem 1rem;text-align:center;cursor:pointer;transition:border-color .13s,background .13s;background:var(--sf2);margin-bottom:10px}
-#dz:hover,#dz.over{border-color:var(--ac);background:rgba(232,255,71,.03)}
+#dz:hover,#dz.over{border-color:var(--ac);background:rgba(216,239,74,.04)}
 #dz input{display:none}
 #dz p{font-size:13px;color:var(--mu)}
 #dz small{font-size:11px;color:var(--fa);margin-top:4px;display:block}
 .abar{display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap}
 .btn{padding:8px 14px;border-radius:6px;border:1px solid var(--bd2);background:var(--sf2);color:var(--tx);font-size:13px;cursor:pointer;transition:all .12s;white-space:nowrap}
-.btn:hover{background:#242424}
-.btn:disabled{opacity:.3;cursor:not-allowed}
+.btn:hover{background:#2b3040}
+.btn:disabled{opacity:.35;cursor:not-allowed}
 .btn.p{background:var(--ac);color:#000;border-color:var(--ac);font-weight:500}
 .btn.d{color:var(--rd);border-color:rgba(248,113,113,.25);background:transparent}
 #prog{font-size:12px;color:var(--mu);display:none}
+#errbox{display:none;margin-bottom:8px;padding:10px 12px;border:1px solid rgba(248,113,113,.35);background:rgba(248,113,113,.08);color:var(--rd);font-size:12px;border-radius:8px;line-height:1.6;max-height:130px;overflow:auto}
 #stats{font-size:12px;color:var(--fa);margin-bottom:8px;display:none}
-#queue{display:flex;flex-direction:column;gap:7px;overflow:auto;min-height:120px;max-height:58vh;padding-right:2px}
+#queue{display:flex;flex-direction:column;gap:7px;overflow:auto;min-height:120px;max-height:60vh;padding-right:2px}
 #empty{text-align:center;padding:1.5rem;font-size:13px;color:var(--fa)}
 .item{display:flex;align-items:center;gap:8px;background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:8px}
-.item.sel{outline:1px solid var(--ac)}
 .thumb{width:44px;height:44px;object-fit:cover;border-radius:7px;border:1px solid var(--bd);flex-shrink:0;background:#111}
 .imeta{flex:1;min-width:0}
 .iname{font-size:12px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px}
@@ -49,50 +46,43 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .mb:hover{color:var(--tx);background:var(--sf)}
 .mb.go{background:var(--ac);color:#000;border-color:var(--ac);font-weight:500}
 .xb{background:none;border:none;color:var(--fa);cursor:pointer;font-size:17px;line-height:1;padding:2px 3px}
-#errbox{display:none;margin-bottom:8px;padding:10px 12px;border:1px solid rgba(248,113,113,.35);background:rgba(248,113,113,.08);color:var(--rd);font-size:12px;border-radius:8px;line-height:1.6;max-height:130px;overflow:auto}
-@media(max-width:980px){#queue{max-height:50vh}}
+@media(max-width:980px){#queue{max-height:52vh}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="layout">
-    <section class="panel left">
-      <div class="eng-row" id="engines">
-        <button class="eb on" data-e="lens">Google Lens</button>
-        <button class="eb" data-e="tineye">TinEye</button>
-        <button class="eb" data-e="yandex">Yandex</button>
-      </div>
+  <section class="panel">
+    <div class="eng-row" id="engines">
+      <button class="eb on" data-e="lens">Google Lens</button>
+      <button class="eb" data-e="tineye">TinEye</button>
+      <button class="eb" data-e="yandex">Yandex</button>
+    </div>
 
-      <div id="dz" role="button" tabindex="0" aria-label="选择图片">
-        <input type="file" id="fi" multiple accept="image/*">
-        <p id="dzText">拖入图片，或点击选择</p>
-        <small id="dzHint">JPG / PNG / WEBP / GIF · 可多选</small>
-      </div>
+    <div id="dz" role="button" tabindex="0" aria-label="选择图片">
+      <input type="file" id="fi" multiple accept="image/*">
+      <p id="dzText">拖入图片，或点击选择</p>
+      <small id="dzHint">JPG / PNG / WEBP / GIF · 可多选</small>
+    </div>
 
-      <div class="abar">
-        <button class="btn p" id="runAll" disabled>上传全部</button>
-        <button class="btn" id="viewFirst" disabled>查看第一条结果</button>
-        <button class="btn" id="openNew" style="display:none">在同一结果标签中打开</button>
-        <button class="btn d" id="clrAll" disabled>清空</button>
-        <span id="prog"></span>
-      </div>
+    <div class="abar">
+      <button class="btn p" id="runAll" disabled>上传全部</button>
+      <button class="btn d" id="clrAll" disabled>清空</button>
+      <span id="prog"></span>
+    </div>
 
-      <div id="errbox"></div>
-      <div id="stats"></div>
-      <div id="queue"><div id="empty">暂无图片</div></div>
-    </section>
-  </div>
+    <div id="errbox"></div>
+    <div id="stats"></div>
+    <div id="queue"><div id="empty">暂无图片</div></div>
+  </section>
 </div>
 
 <script>
-var items=[], idc=0, eng='lens', currentViewId=null, currentViewUrl='';
-var SEARCH_WINDOW_NAME='multi-image-search-window';
+var items=[], idc=0, eng='lens';
 var ENG={
   lens:function(u){return 'https://lens.google.com/uploadbyurl?url='+encodeURIComponent(u)},
   tineye:function(u){return 'https://tineye.com/search?url='+encodeURIComponent(u)},
   yandex:function(u){return 'https://yandex.com/images/search?url='+encodeURIComponent(u)+'&rpt=imageview'}
 };
-
 
 var dz=document.getElementById('dz'),fi=document.getElementById('fi');
 var dzText=document.getElementById('dzText'),dzHint=document.getElementById('dzHint');
@@ -103,7 +93,6 @@ document.getElementById('engines').addEventListener('click',function(e){
   var b=e.target.closest('.eb');if(!b)return;
   document.querySelectorAll('.eb').forEach(function(x){x.classList.remove('on')});
   b.classList.add('on');eng=b.dataset.e;
-  if(currentViewId){viewItem(currentViewId,true);} 
 });
 
 dz.addEventListener('click',function(){fi.click();});
@@ -113,31 +102,10 @@ dz.addEventListener('dragleave',function(){if(!isTouchDevice)dz.classList.remove
 dz.addEventListener('drop',function(e){if(isTouchDevice)return;e.preventDefault();dz.classList.remove('over');addFiles(e.dataTransfer.files);});
 fi.addEventListener('change',function(e){addFiles(e.target.files);fi.value='';});
 
-document.getElementById('openNew').addEventListener('click',function(){
-  if(!currentViewUrl)return;
-  var w=window.open(currentViewUrl,SEARCH_WINDOW_NAME);
-  if(!w)showError('浏览器拦截了结果窗口，请允许弹窗后重试');
-});
-document.getElementById('viewFirst').addEventListener('click',function(){
-  var first=items.find(function(i){return i.url;});
-  if(first)viewItem(first.id);
-});
-
 function fmt(b){return b<1024?b+' B':b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB';}
 function esc(s){return String(s).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});}
-function showError(msg){
-  var eb=document.getElementById('errbox');
-  eb.style.display='block';
-  var d=document.createElement('div');
-  d.textContent='• '+msg;
-  eb.appendChild(d);
-  eb.scrollTop=eb.scrollHeight;
-}
-function clearErrors(){
-  var eb=document.getElementById('errbox');
-  eb.style.display='none';
-  eb.innerHTML='';
-}
+function showError(msg){var eb=document.getElementById('errbox');eb.style.display='block';var d=document.createElement('div');d.textContent='• '+msg;eb.appendChild(d);eb.scrollTop=eb.scrollHeight;}
+function clearErrors(){var eb=document.getElementById('errbox');eb.style.display='none';eb.innerHTML='';}
 
 function addFiles(files){
   Array.from(files).forEach(function(f){
@@ -151,26 +119,22 @@ function addFiles(files){
 var BLABEL={wait:'待上传',ing:'上传中',done:'完成',err:'失败'};
 function renderItem(obj){
   var old=document.getElementById('it-'+obj.id);if(old)old.remove();
-  var div=document.createElement('div');div.className='item'+(obj.id===currentViewId?' sel':'');div.id='it-'+obj.id;
-  var btnUpload=obj.url?'<button class="mb go" onclick="viewItem('+obj.id+')">查看</button>':'<button class="mb" onclick="uploadOne('+obj.id+')">上传</button>';
+  var div=document.createElement('div');div.className='item';div.id='it-'+obj.id;
+  var btn=obj.url?'<button class="mb go" onclick="viewItem('+obj.id+')">查看</button>':'<button class="mb" onclick="uploadOne('+obj.id+')">上传</button>';
   div.innerHTML=
     '<img class="thumb" id="th-'+obj.id+'" alt="">'+
     '<div class="imeta"><div class="iname">'+esc(obj.file.name)+'</div><div class="isize">'+fmt(obj.file.size)+'</div></div>'+
     '<span class="badge '+obj.status+'">'+BLABEL[obj.status]+'</span>'+
-    '<div class="iact">'+btnUpload+'<button class="xb" onclick="removeItem('+obj.id+')">&times;</button></div>';
-  div.addEventListener('click',function(e){if(e.target.closest('button'))return;if(obj.url)viewItem(obj.id);});
+    '<div class="iact">'+btn+'<button class="xb" onclick="removeItem('+obj.id+')">&times;</button></div>';
   var emp=document.getElementById('empty');document.getElementById('queue').insertBefore(div,emp);
   var r=new FileReader();r.onload=function(e){var img=document.getElementById('th-'+obj.id);if(img)img.src=e.target.result;};r.readAsDataURL(obj.file);
 }
-
-function rerenderAll(){items.forEach(renderItem);}
 
 function updateUI(){
   var has=items.length>0;
   document.getElementById('runAll').disabled=!has;
   document.getElementById('clrAll').disabled=!has;
   var uploaded=items.filter(function(i){return i.url;}).length;
-  document.getElementById('viewFirst').disabled=uploaded===0;
   var emp=document.getElementById('empty');if(emp)emp.style.display=has?'none':'block';
   var st=document.getElementById('stats');
   if(has){st.style.display='block';st.innerHTML='共 <b>'+items.length+'</b> 张 · 已上传 <b>'+uploaded+'</b>';}else{st.style.display='none';}
@@ -179,7 +143,6 @@ function updateUI(){
 window.removeItem=function(id){
   items=items.filter(function(i){return i.id!==id});
   var el=document.getElementById('it-'+id);if(el)el.remove();
-  if(currentViewId===id){clearViewer();}
   updateUI();
 };
 
@@ -189,6 +152,7 @@ window.uploadOne=function(id){
     if(!obj||obj.status==='ing'||obj.status==='done'){resolve();return}
     obj.status='ing';renderItem(obj);
     var fd=new FormData();fd.append('file',obj.file,obj.file.name);
+
     fetch('/upload',{method:'POST',body:fd})
       .then(function(r){return r.json().then(function(j){return {ok:r.ok,body:j};});})
       .then(function(ret){
@@ -206,26 +170,11 @@ window.uploadOne=function(id){
   });
 };
 
-function clearViewer(){
-  currentViewId=null;currentViewUrl='';
-  document.getElementById('openNew').style.display='none';
-  rerenderAll();
-}
-
-window.viewItem=function(id,silent){
+window.viewItem=function(id){
   var obj=items.find(function(i){return i.id===id});if(!obj||!obj.url)return;
-  currentViewId=id;
-  currentViewUrl=ENG[eng](obj.url);
-  document.getElementById('openNew').style.display='inline-block';
-
-  if(!silent){
-    var w=window.open(currentViewUrl,SEARCH_WINDOW_NAME);
-    if(!w){
-      showError('浏览器拦截了结果窗口，请允许弹窗后重试');
-    }
-  }
-
-  rerenderAll();
+  var url=ENG[eng](obj.url);
+  var w=window.open(url,'_blank');
+  if(!w){showError('浏览器拦截了新标签页，请允许弹窗后重试');}
 };
 
 document.getElementById('runAll').addEventListener('click',function(){
@@ -236,9 +185,8 @@ document.getElementById('runAll').addEventListener('click',function(){
   (function uploadNext(i){
     if(i>=pending.length){
       prog.textContent='';prog.style.display='none';
-      var first=items.find(function(it){return it.url;});
-      if(!first){showError('没有成功上传的图片，无法搜索');return;}
-      viewItem(first.id);
+      var uploaded=items.some(function(it){return !!it.url;});
+      if(!uploaded)showError('没有成功上传的图片，无法搜索');
       return;
     }
     prog.textContent='上传 '+(i+1)+' / '+pending.length;
@@ -248,10 +196,9 @@ document.getElementById('runAll').addEventListener('click',function(){
 
 document.getElementById('clrAll').addEventListener('click',function(){
   if(!confirm('清空全部 '+items.length+' 张？'))return;
-  items=[];idc=0;currentViewId=null;currentViewUrl='';
+  items=[];idc=0;
   document.getElementById('queue').innerHTML='<div id="empty">暂无图片</div>';
   clearErrors();
-  clearViewer();
   updateUI();
 });
 </script>
