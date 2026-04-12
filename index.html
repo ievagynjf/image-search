@@ -17,7 +17,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .eb.on{background:var(--ac);color:#000;border-color:var(--ac);font-weight:500}
 #dz{border:1.5px dashed var(--bd2);border-radius:10px;padding:2rem 1rem;text-align:center;cursor:pointer;transition:border-color .13s,background .13s;background:var(--sf);position:relative;margin-bottom:1rem}
 #dz:hover,#dz.over{border-color:var(--ac);background:rgba(232,255,71,.03)}
-#dz input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+#dz input{display:none}
 #dz p{font-size:13px;color:var(--mu)}
 #dz small{font-size:11px;color:var(--fa);margin-top:4px;display:block}
 .abar{display:flex;gap:8px;margin-bottom:1rem;align-items:center;flex-wrap:wrap}
@@ -65,10 +65,10 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     <button class="eb" data-e="tineye">TinEye</button>
     <button class="eb" data-e="yandex">Yandex</button>
   </div>
-  <div id="dz">
-    <input type="file" id="fi" multiple accept="image/*">
-    <p>拖入图片，或点击选择</p>
-    <small>JPG / PNG / WEBP / GIF &nbsp;&middot;&nbsp; 可多选</small>
+  <div id="dz" role="button" tabindex="0" aria-label="选择图片">
+    <input type="file" id="fi" multiple accept="image/*" style="display:none">
+    <p id="dzText">拖入图片，或点击选择</p>
+    <small id="dzHint">JPG / PNG / WEBP / GIF &nbsp;&middot;&nbsp; 可多选</small>
   </div>
   <div class="abar">
     <button class="btn p" id="runAll" disabled>搜索全部</button>
@@ -94,9 +94,35 @@ document.getElementById('engines').addEventListener('click',function(e){
 });
 
 var dz=document.getElementById('dz'),fi=document.getElementById('fi');
-dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('over')});
-dz.addEventListener('dragleave',function(){dz.classList.remove('over')});
-dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('over');addFiles(e.dataTransfer.files)});
+var dzText=document.getElementById('dzText');
+var dzHint=document.getElementById('dzHint');
+var isTouchDevice=('ontouchstart' in window) || (navigator.maxTouchPoints>0);
+
+if(isTouchDevice){
+  dzText.textContent='点击选择图片';
+  dzHint.innerHTML='JPG / PNG / WEBP / GIF &nbsp;&middot;&nbsp; 支持多选';
+}
+
+dz.addEventListener('click',function(){fi.click();});
+dz.addEventListener('keydown',function(e){
+  if(e.key==='Enter'||e.key===' '){
+    e.preventDefault();
+    fi.click();
+  }
+});
+
+dz.addEventListener('dragover',function(e){
+  if(isTouchDevice)return;
+  e.preventDefault();
+  dz.classList.add('over');
+});
+dz.addEventListener('dragleave',function(){if(!isTouchDevice)dz.classList.remove('over')});
+dz.addEventListener('drop',function(e){
+  if(isTouchDevice)return;
+  e.preventDefault();
+  dz.classList.remove('over');
+  addFiles(e.dataTransfer.files);
+});
 fi.addEventListener('change',function(e){addFiles(e.target.files);fi.value=''});
 
 function fmt(b){return b<1024?b+' B':b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB'}
@@ -205,13 +231,7 @@ window.uploadOne=function(id){
 document.getElementById('runAll').addEventListener('click',function(){
   var prog=document.getElementById('prog');
   var pending=items.filter(function(i){return i.status==='wait'||i.status==='err'});
-  var tabs=[];
   prog.style.display='inline';
-
-  for(var i=0;i<items.length;i++){
-    var w=window.open('about:blank','_blank');
-    if(w)tabs.push(w);
-  }
 
   (function uploadNext(i){
     if(i>=pending.length){
@@ -219,25 +239,18 @@ document.getElementById('runAll').addEventListener('click',function(){
       var ready=items.filter(function(it){return it.url});
       if(!ready.length){
         addLog('没有成功上传的图片，无法搜索','er');
-        tabs.forEach(function(t){if(t&&!t.closed)t.close();});
         return;
       }
 
-      if(tabs.length<ready.length){
-        addLog('部分搜索窗口被浏览器拦截，请允许弹窗后重试','er');
-      }
-
-      ready.forEach(function(obj,idx){
-        var target=tabs[idx];
-        if(target && !target.closed){
-          target.location.href=ENG[eng](obj.url);
-        }else{
-          window.open(ENG[eng](obj.url),'_blank');
-        }
+      var blocked=0;
+      ready.forEach(function(obj){
+        var w=window.open(ENG[eng](obj.url),'_blank');
+        if(!w)blocked++;
       });
 
-      for(var j=ready.length;j<tabs.length;j++){
-        if(tabs[j] && !tabs[j].closed)tabs[j].close();
+      // 只在完全失败时提示；有成功打开就不提示
+      if(blocked===ready.length){
+        addLog('搜索窗口被浏览器拦截，请允许弹窗后重试','er');
       }
       return;
     }
