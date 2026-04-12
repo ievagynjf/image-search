@@ -10,11 +10,10 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--tx);font-family:'Noto Sans SC',sans-serif;font-weight:300;min-height:100vh}
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(232,255,71,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(232,255,71,.022) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0}
-.wrap{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:1.2rem 1rem 2rem}
-.layout{display:grid;grid-template-columns:420px 1fr;gap:14px;min-height:78vh}
+.wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:1.2rem 1rem 2rem}
+.layout{display:block}
 .panel{background:var(--sf);border:1px solid var(--bd);border-radius:12px}
 .left{padding:12px;display:flex;flex-direction:column;min-height:0}
-.right{padding:10px;display:flex;flex-direction:column;min-height:0}
 .eng-row{display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap}
 .eb{padding:5px 13px;border-radius:99px;border:1px solid var(--bd2);background:transparent;color:var(--mu);font-size:12px;cursor:pointer;transition:all .13s}
 .eb:hover{border-color:var(--ac);color:var(--ac)}
@@ -32,7 +31,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .btn.d{color:var(--rd);border-color:rgba(248,113,113,.25);background:transparent}
 #prog{font-size:12px;color:var(--mu);display:none}
 #stats{font-size:12px;color:var(--fa);margin-bottom:8px;display:none}
-#queue{display:flex;flex-direction:column;gap:7px;overflow:auto;min-height:120px;max-height:46vh;padding-right:2px}
+#queue{display:flex;flex-direction:column;gap:7px;overflow:auto;min-height:120px;max-height:58vh;padding-right:2px}
 #empty{text-align:center;padding:1.5rem;font-size:13px;color:var(--fa)}
 .item{display:flex;align-items:center;gap:8px;background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:8px}
 .item.sel{outline:1px solid var(--ac)}
@@ -51,13 +50,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .mb.go{background:var(--ac);color:#000;border-color:var(--ac);font-weight:500}
 .xb{background:none;border:none;color:var(--fa);cursor:pointer;font-size:17px;line-height:1;padding:2px 3px}
 #errbox{display:none;margin-bottom:8px;padding:10px 12px;border:1px solid rgba(248,113,113,.35);background:rgba(248,113,113,.08);color:var(--rd);font-size:12px;border-radius:8px;line-height:1.6;max-height:130px;overflow:auto}
-.viewer-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 2px 10px}
-.vtitle{font-size:13px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.vbtns{display:flex;gap:6px}
-#openNew{display:none}
-.viewer{position:relative;flex:1;min-height:420px;border:1px solid var(--bd);border-radius:10px;background:#111;overflow:hidden;display:flex;align-items:center;justify-content:center}
-#viewerEmpty{color:var(--fa);font-size:13px;text-align:center;padding:1.2rem;line-height:1.8;max-width:560px}
-@media(max-width:980px){.layout{grid-template-columns:1fr}.right{min-height:62vh}.viewer{min-height:60vh}#queue{max-height:34vh}}
+@media(max-width:980px){#queue{max-height:50vh}}
 </style>
 </head>
 <body>
@@ -79,6 +72,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <div class="abar">
         <button class="btn p" id="runAll" disabled>上传全部</button>
         <button class="btn" id="viewFirst" disabled>查看第一条结果</button>
+        <button class="btn" id="openNew" style="display:none">在同一结果标签中打开</button>
         <button class="btn d" id="clrAll" disabled>清空</button>
         <span id="prog"></span>
       </div>
@@ -86,18 +80,6 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <div id="errbox"></div>
       <div id="stats"></div>
       <div id="queue"><div id="empty">暂无图片</div></div>
-    </section>
-
-    <section class="panel right">
-      <div class="viewer-toolbar">
-        <div class="vtitle" id="viewerTitle">结果面板：请先上传并点击某条“查看”</div>
-        <div class="vbtns">
-          <button class="btn" id="openNew">新标签打开</button>
-        </div>
-      </div>
-      <div class="viewer">
-        <div id="viewerEmpty">结果将在单个复用标签页中打开（不会越开越多）。<br>点击队列里的“查看”或“上传全部”后自动打开/复用。</div>
-      </div>
     </section>
   </div>
 </div>
@@ -110,7 +92,7 @@ var ENG={
   tineye:function(u){return 'https://tineye.com/search?url='+encodeURIComponent(u)},
   yandex:function(u){return 'https://yandex.com/images/search?url='+encodeURIComponent(u)+'&rpt=imageview'}
 };
-var ENG_NAME={lens:'Google Lens',tineye:'TinEye',yandex:'Yandex'};
+
 
 var dz=document.getElementById('dz'),fi=document.getElementById('fi');
 var dzText=document.getElementById('dzText'),dzHint=document.getElementById('dzHint');
@@ -121,7 +103,7 @@ document.getElementById('engines').addEventListener('click',function(e){
   var b=e.target.closest('.eb');if(!b)return;
   document.querySelectorAll('.eb').forEach(function(x){x.classList.remove('on')});
   b.classList.add('on');eng=b.dataset.e;
-  if(currentViewId){viewItem(currentViewId);} 
+  if(currentViewId){viewItem(currentViewId,true);} 
 });
 
 dz.addEventListener('click',function(){fi.click();});
@@ -226,23 +208,21 @@ window.uploadOne=function(id){
 
 function clearViewer(){
   currentViewId=null;currentViewUrl='';
-  document.getElementById('viewerTitle').textContent='结果面板：请先上传并点击某条“查看”';
   document.getElementById('openNew').style.display='none';
-  document.getElementById('viewerEmpty').style.display='block';
   rerenderAll();
 }
 
-window.viewItem=function(id){
+window.viewItem=function(id,silent){
   var obj=items.find(function(i){return i.id===id});if(!obj||!obj.url)return;
   currentViewId=id;
   currentViewUrl=ENG[eng](obj.url);
-  document.getElementById('viewerTitle').textContent='查看：'+obj.file.name+' · '+(ENG_NAME[eng]||eng);
   document.getElementById('openNew').style.display='inline-block';
-  document.getElementById('viewerEmpty').style.display='block';
 
-  var w=window.open(currentViewUrl,SEARCH_WINDOW_NAME);
-  if(!w){
-    showError('浏览器拦截了结果窗口，请允许弹窗后重试');
+  if(!silent){
+    var w=window.open(currentViewUrl,SEARCH_WINDOW_NAME);
+    if(!w){
+      showError('浏览器拦截了结果窗口，请允许弹窗后重试');
+    }
   }
 
   rerenderAll();
