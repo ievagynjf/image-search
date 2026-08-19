@@ -60,8 +60,8 @@ body{background:var(--bg);color:var(--tx);font-family:'Noto Sans SC',sans-serif;
 
     <div id="dz" role="button" tabindex="0" aria-label="选择图片">
       <input type="file" id="fi" multiple accept="image/*">
-      <p id="dzText">拖入图片，或点击选择</p>
-      <small id="dzHint">JPG / PNG / WEBP / GIF · 可多选</small>
+      <p id="dzText">拖入页面任意位置，或点击选择</p>
+      <small id="dzHint">JPG / PNG / WEBP / GIF · 单张不超过 10 MB · 可多选</small>
     </div>
 
     <div class="abar">
@@ -77,7 +77,7 @@ body{background:var(--bg);color:var(--tx);font-family:'Noto Sans SC',sans-serif;
 </div>
 
 <script>
-var items=[], idc=0, eng='lens';
+var items=[], idc=0, eng='lens', batchRunning=false, MAX_FILE_SIZE=10*1024*1024;
 var ENG={
   lens:function(u){return 'https://lens.google.com/uploadbyurl?url='+encodeURIComponent(u)},
   tineye:function(u){return 'https://tineye.com/search?url='+encodeURIComponent(u)},
@@ -87,7 +87,7 @@ var ENG={
 var dz=document.getElementById('dz'),fi=document.getElementById('fi');
 var dzText=document.getElementById('dzText'),dzHint=document.getElementById('dzHint');
 var isTouchDevice=('ontouchstart' in window)||(navigator.maxTouchPoints>0);
-if(isTouchDevice){dzText.textContent='点击选择图片';dzHint.textContent='JPG / PNG / WEBP / GIF · 支持多选';}
+if(isTouchDevice){dzText.textContent='点击选择图片';dzHint.textContent='JPG / PNG / WEBP / GIF · 单张不超过 10 MB · 支持多选';}
 
 document.getElementById('engines').addEventListener('click',function(e){
   var b=e.target.closest('.eb');if(!b)return;
@@ -97,9 +97,9 @@ document.getElementById('engines').addEventListener('click',function(e){
 
 dz.addEventListener('click',function(){fi.click();});
 dz.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();fi.click();}});
-dz.addEventListener('dragover',function(e){if(isTouchDevice)return;e.preventDefault();dz.classList.add('over');});
-dz.addEventListener('dragleave',function(){if(!isTouchDevice)dz.classList.remove('over');});
-dz.addEventListener('drop',function(e){if(isTouchDevice)return;e.preventDefault();dz.classList.remove('over');addFiles(e.dataTransfer.files);});
+document.addEventListener('dragover',function(e){e.preventDefault();e.dataTransfer.dropEffect='copy';dz.classList.add('over');});
+document.addEventListener('dragleave',function(e){if(e.relatedTarget===null)dz.classList.remove('over');});
+document.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('over');addFiles(e.dataTransfer.files);});
 fi.addEventListener('change',function(e){addFiles(e.target.files);fi.value='';});
 
 function fmt(b){return b<1024?b+' B':b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB';}
@@ -109,8 +109,9 @@ function clearErrors(){var eb=document.getElementById('errbox');eb.style.display
 
 function addFiles(files){
   Array.from(files).forEach(function(f){
-    if(!f.type.startsWith('image/'))return;
-    var obj={id:++idc,file:f,url:null,status:'wait'};
+    if(f.type&&!/^image\/(jpeg|png|webp|gif)$/.test(f.type)){showError(f.name+': 仅支持 JPG、PNG、WEBP 和 GIF');return;}
+    if(f.size===0||f.size>MAX_FILE_SIZE){showError(f.name+': 图片必须小于 10 MB');return;}
+    var obj={id:++idc,file:f,preview:URL.createObjectURL(f),url:null,status:'wait'};
     items.push(obj);renderItem(obj);
   });
   updateUI();
@@ -122,17 +123,17 @@ function renderItem(obj){
   var div=document.createElement('div');div.className='item';div.id='it-'+obj.id;
   var btn=obj.url?'<button class="mb go" onclick="viewItem('+obj.id+')">查看</button>':'<button class="mb" onclick="uploadOne('+obj.id+')">上传</button>';
   div.innerHTML=
-    '<img class="thumb" id="th-'+obj.id+'" alt="">'+
+    '<img class="thumb" src="'+esc(obj.preview)+'" alt="">'+
     '<div class="imeta"><div class="iname">'+esc(obj.file.name)+'</div><div class="isize">'+fmt(obj.file.size)+'</div></div>'+
     '<span class="badge '+obj.status+'">'+BLABEL[obj.status]+'</span>'+
     '<div class="iact">'+btn+'<button class="xb" onclick="removeItem('+obj.id+')">&times;</button></div>';
   var emp=document.getElementById('empty');document.getElementById('queue').insertBefore(div,emp);
-  var r=new FileReader();r.onload=function(e){var img=document.getElementById('th-'+obj.id);if(img)img.src=e.target.result;};r.readAsDataURL(obj.file);
 }
 
 function updateUI(){
   var has=items.length>0;
-  document.getElementById('runAll').disabled=!has;
+  var hasPending=items.some(function(i){return i.status==='wait'||i.status==='err'});
+  document.getElementById('runAll').disabled=batchRunning||!hasPending;
   document.getElementById('clrAll').disabled=!has;
   var uploaded=items.filter(function(i){return i.url;}).length;
   var emp=document.getElementById('empty');if(emp)emp.style.display=has?'none':'block';
@@ -141,6 +142,8 @@ function updateUI(){
 }
 
 window.removeItem=function(id){
+  var obj=items.find(function(i){return i.id===id});
+  if(obj){obj.removed=true;if(obj.controller)obj.controller.abort();URL.revokeObjectURL(obj.preview);}
   items=items.filter(function(i){return i.id!==id});
   var el=document.getElementById('it-'+id);if(el)el.remove();
   updateUI();
@@ -150,25 +153,55 @@ window.uploadOne=function(id){
   return new Promise(function(resolve){
     var obj=items.find(function(i){return i.id===id});
     if(!obj||obj.status==='ing'||obj.status==='done'){resolve();return}
-    obj.status='ing';renderItem(obj);
+    obj.status='ing';obj.controller=new AbortController();renderItem(obj);
     var fd=new FormData();fd.append('file',obj.file,obj.file.name);
 
-    fetch('/upload',{method:'POST',body:fd})
-      .then(function(r){return r.json().then(function(j){return {ok:r.ok,body:j};});})
+    fetch('/upload',{method:'POST',body:fd,signal:obj.controller.signal})
+      .then(readUploadResponse)
       .then(function(ret){
+        obj.controller=null;
+        if(obj.removed){resolve();return;}
         if(ret.ok&&ret.body&&ret.body.ok&&ret.body.url){
           obj.url=ret.body.url;obj.status='done';
         }else{
           obj.status='err';
-          var msg=(ret.body&&ret.body.error)||'上传失败';
-          if(ret.body&&Array.isArray(ret.body.details)&&ret.body.details.length){msg+=' | '+ret.body.details.join(' ; ');} 
-          showError(obj.file.name+': '+msg);
+          showError(obj.file.name+': '+getUploadError(ret));
         }
         renderItem(obj);updateUI();resolve();
       })
-      .catch(function(){obj.status='err';showError(obj.file.name+': Cloudflare Functions 未生效');renderItem(obj);updateUI();resolve();});
+      .catch(function(err){
+        obj.controller=null;
+        if(obj.removed||err.name==='AbortError'){resolve();return;}
+        obj.status='err';
+        var msg=err&&err.name==='TypeError'?'网络连接失败，请检查网络后重试':'上传过程发生异常';
+        showError(obj.file.name+': '+msg);renderItem(obj);updateUI();resolve();
+      });
   });
 };
+
+function readUploadResponse(response){
+  return response.text().then(function(text){
+    var body=null;
+    if(text){try{body=JSON.parse(text);}catch(e){}}
+    return {ok:response.ok,status:response.status,body:body};
+  });
+}
+
+function getUploadError(ret){
+  if(ret.body&&typeof ret.body.error==='string'&&ret.body.error){
+    var msg=ret.body.error;
+    if(Array.isArray(ret.body.details)&&ret.body.details.length){msg+=' | '+ret.body.details.join(' ; ');}
+    return msg;
+  }
+  if(ret.status===403)return '上传请求被拒绝（HTTP 403）';
+  if(ret.status===413)return '图片超过服务器允许的大小（HTTP 413）';
+  if(ret.status===415)return '服务器不支持该图片格式（HTTP 415）';
+  if(ret.status===429)return '上传请求过于频繁，请稍后重试（HTTP 429）';
+  if(ret.status===500)return '上传服务内部错误（HTTP 500）';
+  if(ret.status===502||ret.status===503||ret.status===504)return '上传服务暂时不可用（HTTP '+ret.status+'）';
+  if(!ret.ok)return '上传失败（HTTP '+ret.status+'）';
+  return '上传服务返回了无法识别的响应（HTTP '+ret.status+'）';
+}
 
 window.viewItem=function(id){
   var obj=items.find(function(i){return i.id===id});if(!obj||!obj.url)return;
@@ -178,6 +211,8 @@ window.viewItem=function(id){
 };
 
 document.getElementById('runAll').addEventListener('click',function(){
+  if(batchRunning)return;
+  batchRunning=true;updateUI();
   var prog=document.getElementById('prog');
   var pending=items.filter(function(i){return i.status==='wait'||i.status==='err'});
   clearErrors();
@@ -185,6 +220,7 @@ document.getElementById('runAll').addEventListener('click',function(){
   (function uploadNext(i){
     if(i>=pending.length){
       prog.textContent='';prog.style.display='none';
+      batchRunning=false;updateUI();
       var uploaded=items.some(function(it){return !!it.url;});
       if(!uploaded)showError('没有成功上传的图片，无法搜索');
       return;
@@ -196,7 +232,8 @@ document.getElementById('runAll').addEventListener('click',function(){
 
 document.getElementById('clrAll').addEventListener('click',function(){
   if(!confirm('清空全部 '+items.length+' 张？'))return;
-  items=[];idc=0;
+  items.forEach(function(i){i.removed=true;if(i.controller)i.controller.abort();URL.revokeObjectURL(i.preview);});
+  items=[];
   document.getElementById('queue').innerHTML='<div id="empty">暂无图片</div>';
   clearErrors();
   updateUI();

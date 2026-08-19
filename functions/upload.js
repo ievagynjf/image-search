@@ -1,7 +1,19 @@
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
 export async function onRequestPost(context) {
   try {
     const req = context.request;
     const env = context.env || {};
+
+    if (!isSameOrigin(req)) {
+      return json({ ok: false, error: 'Cross-origin uploads are not allowed' }, 403);
+    }
+
+    const contentLength = Number(req.headers.get('content-length') || 0);
+    if (contentLength > MAX_FILE_SIZE + 1024 * 1024) {
+      return json({ ok: false, error: 'Image exceeds the 10 MB limit' }, 413);
+    }
+
     const form = await req.formData();
     const file = form.get('file');
 
@@ -9,110 +21,51 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: 'No file uploaded' }, 400);
     }
 
-    const name = sanitizeName(file.name || 'image.bin');
-    const type = file.type || 'application/octet-stream';
+    if (file.size === 0 || file.size > MAX_FILE_SIZE) {
+      return json({ ok: false, error: 'Image must be between 1 byte and 10 MB' }, 413);
+    }
 
-    // 1) Best path: your own Cloudflare R2 bucket (stable)
-    if (env.IMG_BUCKET) {
-      const key = buildObjectKey(name);
-      await env.IMG_BUCKET.put(key, await file.arrayBuffer(), {
+    const image = await detectImageType(file);
+    if (!image) {
+      return json({ ok: false, error: 'Only valid JPG, PNG, WEBP and GIF images are accepted' }, 415);
+    }
+
+    const type = image.mime;
+
+    if (!env.IMG_BUCKET) {
+      return json({ ok: false, error: 'Cloudflare R2 bucket is not configured' }, 503);
+    }
+
+    const publicBase = (env.R2_PUBLIC_BASE_URL || '').replace(/\/$/, '');
+    if (!publicBase) {
+      return json({
+        ok: false,
+        error: 'R2_PUBLIC_BASE_URL is not configured',
+        details: ['Please set Pages env var R2_PUBLIC_BASE_URL, e.g. https://img.yourdomain.com']
+      }, 500);
+    }
+
+    const key = buildObjectKey(image.ext);
+    await env.IMG_BUCKET.put(key, await file.arrayBuffer(), {
         httpMetadata: {
           contentType: type,
-          cacheControl: 'public, max-age=31536000, immutable'
+          cacheControl: 'public, max-age=3600'
         }
-      });
-
-      const publicBase = (env.R2_PUBLIC_BASE_URL || '').replace(/\/$/, '');
-      if (!publicBase) {
-        return json({
-          ok: false,
-          error: 'R2 uploaded, but R2_PUBLIC_BASE_URL is not configured',
-          details: ['Please set Pages env var R2_PUBLIC_BASE_URL, e.g. https://img.yourdomain.com']
-        }, 500);
-      }
-
-      return json({
-        ok: true,
-        url: `${publicBase}/${key}`,
-        provider: 'cloudflare-r2',
-        type
-      });
-    }
-
-    // 2) Fallback path: anonymous third-party mirrors (unreliable)
-    const errors = [];
-
-    try {
-      const out = await tryTelegraph(file, name);
-      return json({ ok: true, url: out.url, provider: out.provider, type });
-    } catch (e) {
-      errors.push(String(e?.message || e));
-    }
-
-    try {
-      const out = await try0x0(file, name);
-      return json({ ok: true, url: out.url, provider: out.provider, type });
-    } catch (e) {
-      errors.push(String(e?.message || e));
-    }
-
-    try {
-      const out = await tryCatbox(file, name);
-      return json({ ok: true, url: out.url, provider: out.provider, type });
-    } catch (e) {
-      errors.push(String(e?.message || e));
-    }
+    });
 
     return json({
-      ok: false,
-      error: 'All upstream upload providers failed',
-      details: [
-        ...errors,
-        'Tip: bind an R2 bucket as IMG_BUCKET and set R2_PUBLIC_BASE_URL for stable uploads.'
-      ]
-    }, 502);
+      ok: true,
+      url: `${publicBase}/${key}`,
+      provider: 'cloudflare-r2',
+      type
+    });
   } catch (err) {
     return json({ ok: false, error: String(err?.message || err) }, 500);
   }
 }
 
-async function tryTelegraph(file, name) {
-  const fd = new FormData();
-  fd.append('file', file, name);
-  const res = await fetch('https://telegra.ph/upload', { method: 'POST', body: fd });
-  if (!res.ok) throw new Error(`telegra.ph HTTP ${res.status}`);
-  const data = await res.json();
-  if (!Array.isArray(data) || !data[0] || !data[0].src) {
-    throw new Error(`telegra.ph invalid response: ${JSON.stringify(data)}`);
-  }
-  return { url: 'https://telegra.ph' + data[0].src, provider: 'telegra.ph' };
-}
-
-async function try0x0(file, name) {
-  const fd = new FormData();
-  fd.append('file', file, name);
-  const res = await fetch('https://0x0.st', { method: 'POST', body: fd });
-  if (!res.ok) throw new Error(`0x0 HTTP ${res.status}`);
-  const text = (await res.text()).trim();
-  if (!/^https?:\/\//.test(text)) throw new Error('0x0 invalid response');
-  return { url: text, provider: '0x0.st' };
-}
-
-async function tryCatbox(file, name) {
-  const fd = new FormData();
-  fd.append('reqtype', 'fileupload');
-  fd.append('userhash', '');
-  fd.append('fileToUpload', file, name);
-  const res = await fetch('https://catbox.moe/user/api.php', { method: 'POST', body: fd });
-  if (!res.ok) throw new Error(`catbox HTTP ${res.status}`);
-  const text = (await res.text()).trim();
-  if (!/^https?:\/\//.test(text)) throw new Error(`catbox invalid response: ${text}`);
-  return { url: text, provider: 'catbox.moe' };
-}
-
-function buildObjectKey(name) {
+function buildObjectKey(ext) {
   const rand = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  const ext = getExt(name);
   const d = new Date();
   const y = d.getUTCFullYear();
   const m = String(d.getUTCMonth() + 1).padStart(2, '0');
@@ -120,23 +73,35 @@ function buildObjectKey(name) {
   return `uploads/${y}/${m}/${day}/${rand}${ext}`;
 }
 
-function getExt(name) {
-  const i = name.lastIndexOf('.');
-  if (i === -1) return '';
-  const ext = name.slice(i).toLowerCase();
-  return /\.[a-z0-9]{1,8}$/.test(ext) ? ext : '';
+async function detectImageType(file) {
+  const b = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+  if (b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) {
+    return { mime: 'image/jpeg', ext: '.jpg' };
+  }
+  if (b.length >= 8 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47 && b[4] === 0x0d && b[5] === 0x0a && b[6] === 0x1a && b[7] === 0x0a) {
+    return { mime: 'image/png', ext: '.png' };
+  }
+  if (b.length >= 6 && b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38 && (b[4] === 0x37 || b[4] === 0x39) && b[5] === 0x61) {
+    return { mime: 'image/gif', ext: '.gif' };
+  }
+  if (b.length >= 12 && b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) {
+    return { mime: 'image/webp', ext: '.webp' };
+  }
+  return null;
 }
 
-function sanitizeName(name) {
-  return String(name).replace(/[^\w.-]+/g, '_');
+function isSameOrigin(req) {
+  const origin = req.headers.get('origin');
+  return !!origin && origin === new URL(req.url).origin;
 }
 
-function json(data, status = 200) {
+function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
       'content-type': 'application/json; charset=utf-8',
-      'cache-control': 'no-store'
+      'cache-control': 'no-store',
+      ...extraHeaders
     }
   });
 }
