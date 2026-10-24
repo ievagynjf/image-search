@@ -13,7 +13,8 @@ body{background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,'S
 html.modal-open{overflow:hidden;scrollbar-gutter:stable}
 button{font:inherit}
 .wrap{max-width:1160px;margin:0 auto;padding:40px 24px 56px}
-.topbar{display:flex;justify-content:flex-end;margin-bottom:20px}
+.topbar{display:flex;justify-content:flex-end;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.local-test-note{margin-right:auto;font-size:12px;color:var(--search-tx);background:var(--search-bg);padding:6px 10px;border-radius:8px}
 .theme-toggle{display:inline-flex;align-items:center;gap:10px;color:var(--mu);font-size:13px;cursor:pointer;user-select:none}
 .theme-toggle input{position:absolute;opacity:0;width:1px;height:1px}
 .switch-track{width:40px;height:24px;border-radius:20px;background:#c7ced9;padding:3px;transition:background .2s}
@@ -76,6 +77,7 @@ kbd{font:inherit;font-size:12px;padding:2px 6px;border-radius:5px;background:var
 <body>
 <div class="wrap">
   <div class="topbar">
+    <span class="local-test-note" id="localTestBadge" hidden>本地测试 · 不联网</span>
     <label class="theme-toggle"><span>深色模式</span><input type="checkbox" id="themeToggle" role="switch" aria-label="深色模式"><span class="switch-track" aria-hidden="true"></span></label>
   </div>
   <section class="panel">
@@ -112,6 +114,8 @@ kbd{font:inherit;font-size:12px;padding:2px 6px;border-radius:5px;background:var
 
 <script>
 var items=[], idc=0, MAX_FILE_SIZE=10*1024*1024;
+var LOCAL_TEST=location.protocol==='file:'||new URL(location.href).searchParams.get('local-test')==='1';
+document.getElementById('localTestBadge').hidden=!LOCAL_TEST;
 var themeToggle=document.getElementById('themeToggle');
 themeToggle.checked=document.documentElement.dataset.theme==='dark';
 themeToggle.addEventListener('change',function(){
@@ -221,7 +225,7 @@ function endPreview(){
   setSearchError('');
   var state=previewState;previewState=null;
   if(state)clearTimeout(state.idleTimer);
-  if(state&&state.job){state.job.controller.abort();if(!state.job.tab.closed)state.job.tab.close();}
+  if(state&&state.job){state.job.controller.abort();if(!state.job.tab.closed)state.job.tab.close();if(state.job.cleanup)state.job.cleanup();}
 }
 function closePreview(){endPreview();previewDialog.close();document.documentElement.classList.remove('modal-open');}
 document.getElementById('closePreview').addEventListener('click',closePreview);
@@ -431,11 +435,58 @@ async function searchFile(state,obj,region){
 document.getElementById('previewSearch').addEventListener('click',function(e){
   var button=e.target.closest('[data-engine]');if(button)searchImage(button.dataset.engine);
 });
+function localSearchPage(engine,imageURL,region,file){
+  var label={lens:'Lens',tineye:'TinEye',yandex:'Yandex'}[engine];
+  var theme=document.documentElement.dataset.theme==='dark'?'dark':'light';
+  var body=imageURL?'<p class="meta">'+region.w+' × '+region.h+' 像素 · '+esc(file.type)+' · '+(file.size/1024).toFixed(1)+' KB</p><div class="image"><img id="localPreview" src="'+esc(imageURL)+'" alt="实际用于搜索的图片"></div>'
+    :'<div class="spinner" aria-hidden="true"></div><p class="meta">正在生成裁剪预览…</p>';
+  var html='<!doctype html><html lang="zh-CN" data-theme="'+theme+'"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+
+    '<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; img-src data:; style-src &#39;unsafe-inline&#39;"><meta name="referrer" content="no-referrer"><title>'+label+' · 本地测试</title>'+
+    '<style>:root{color-scheme:light;--bg:#f5f6f8;--sf:#fff;--tx:#202631;--mu:#687283;--accent:#3976ec}'+
+    ':root[data-theme=dark]{color-scheme:dark;--bg:#12161e;--sf:#1c232e;--tx:#e8edf5;--mu:#a8b4c7;--accent:#88adff}'+
+    '*{box-sizing:border-box}body{margin:0;padding:40px 20px;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif}main{max-width:1000px;margin:auto}'+
+    'header{display:flex;gap:12px;align-items:center;flex-wrap:wrap}h1{font-size:24px;margin:0;font-weight:600}.badge{font-size:12px;border-radius:8px;padding:6px 10px;background:var(--sf);color:var(--accent)}'+
+    'p{font-size:13px;color:var(--mu);line-height:1.8}.meta{margin:20px 0}.image{display:flex;justify-content:center;background:var(--sf);border-radius:16px;overflow:hidden}img{display:block;max-width:100%;height:auto;max-height:75vh;object-fit:contain}'+
+    '.spinner{width:32px;height:32px;border:3px solid var(--sf);border-top-color:var(--accent);border-radius:50%;margin-top:32px;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.spinner{animation:none}}</style></head>'+
+    '<body><main><header><h1>'+label+'</h1><span class="badge">本地测试 · 不联网</span></header><p>仅预览实际搜索图片，不调用上传服务或搜索引擎。</p>'+body+'</main></body></html>';
+  return html;
+}
+async function searchLocalImage(engine,state,obj){
+  var urls=[],timer=null;
+  function cleanup(){if(timer!==null)clearInterval(timer);timer=null;urls.splice(0).forEach(function(url){URL.revokeObjectURL(url);});}
+  var tab=window.open('','_blank');
+  if(!tab){cleanup();setSearchError('请允许弹出窗口后重试');return;}
+  try{
+    tab.document.open();tab.document.write(localSearchPage(engine));tab.document.close();tab.opener=null;
+  }catch(err){
+    if(!tab.closed)tab.close();cleanup();setSearchError('浏览器无法打开本地预览，请检查弹窗权限');return;
+  }
+  var job={tab:tab,controller:new AbortController(),cleanup:cleanup};
+  state.job=job;state.busy=true;state.engine=engine;updateSearchButtons();
+  try{
+    var region=selectedRegion(state),file=await searchFile(state,obj,region);
+    if(previewState!==state||job.controller.signal.aborted||tab.closed){cleanup();return;}
+    // file:// 的 Blob 页面具有隔离源，内嵌图片可避免跨源读取本地 Blob 被拦截。
+    var imageURL=await new Promise(function(resolve,reject){
+      var reader=new FileReader();reader.onload=function(){resolve(reader.result);};
+      reader.onerror=function(){reject(new Error('无法读取本地图片'));};reader.readAsDataURL(file);
+    });
+    if(previewState!==state||job.controller.signal.aborted||tab.closed){cleanup();return;}
+    var page=URL.createObjectURL(new Blob([localSearchPage(engine,imageURL,region,file)],{type:'text/html;charset=utf-8'}));urls.push(page);
+    tab.location.replace(page);
+    timer=setInterval(function(){if(tab.closed)cleanup();},1000);
+  }catch(err){
+    if(!tab.closed)tab.close();cleanup();
+    if(previewState===state&&err.name!=='AbortError')setSearchError(err.message||'本地预览失败，请重试');
+  }finally{
+    state.job=null;state.busy=false;if(previewState===state)updateSearchButtons();
+  }
+}
 async function searchImage(engine){
   var state=previewState;if(!ENG[engine]||!state||!state.loaded||state.busy)return;
   var obj=items.find(function(i){return i.id===state.id;});if(!obj)return;
   setSearchError('');
-  if(location.protocol==='file:'){setSearchError('自动上传需通过网站地址访问，当前为本地文件');return;}
+  if(LOCAL_TEST){await searchLocalImage(engine,state,obj);return;}
   var region=selectedRegion(state),key=[region.x,region.y,region.w,region.h].join(',');
   if(!obj.searchCache)obj.searchCache=new Map();
   var url=obj.searchCache.get(key);
