@@ -436,15 +436,17 @@ async function searchImage(engine){
   var obj=items.find(function(i){return i.id===state.id;});if(!obj)return;
   setSearchError('');
   if(location.protocol==='file:'){setSearchError('自动上传需通过网站地址访问，当前为本地文件');return;}
+  var region=selectedRegion(state),key=[region.x,region.y,region.w,region.h].join(',');
+  if(!obj.searchCache)obj.searchCache=new Map();
+  var url=obj.searchCache.get(key);
+  var loading=new URL('searching.html',location.href);loading.searchParams.set('engine',engine);
   // 在点击事件中先打开标签页，避免异步上传完成后被浏览器拦截。
-  var tab=window.open('about:blank','_blank');
+  var tab=window.open(url?ENG[engine](url):loading.href,'_blank');
   if(!tab){setSearchError('请允许弹出窗口后重试');return;}
   tab.opener=null;
+  if(url)return;
   var job={tab:tab,controller:new AbortController()};state.job=job;state.busy=true;state.engine=engine;updateSearchButtons();
   try{
-    var region=selectedRegion(state),key=[region.x,region.y,region.w,region.h].join(',');
-    if(!obj.searchCache)obj.searchCache=new Map();
-    var url=obj.searchCache.get(key);
     if(!url){
       var file=await searchFile(state,obj,region);
       if(previewState!==state||job.controller.signal.aborted)return;
