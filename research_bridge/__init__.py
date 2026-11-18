@@ -1,0 +1,1 @@
+"""Private price-and-review research MCP bridge."""
