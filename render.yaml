@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: cross-market-research
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: RESEARCH_API_TOKEN
+        generateValue: true
+      - key: RESEARCH_DB
+        value: /tmp/market-research.sqlite3
